@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import re
 
 all_x = []
 all_y = []
@@ -20,6 +21,26 @@ while True:
 f.close()
 f = open("silhouette.txt", "r")
 s_clusters = []
+while True:
+    s = f.readline()
+    if not s:
+        break
+    n = int(s)
+    cur_n = []
+    cur_c = []
+    for i in range(n):
+        data = f.readline()
+        data = data[:-1]
+        w = re.split(r"\t+", data)
+        print(w)
+        cur_n.append(w[0])
+        cur_c.append(float(w[1]))
+    s_clusters.append((cur_n, cur_c))
+f.close()
+for i in range(len(s_clusters)):
+    plt.barh(s_clusters[i][0], s_clusters[i][1])
+plt.show()
+print(s_clusters[0])
 for i in range(len(all_x)):
     plt.scatter(all_x[i], all_y[i], s=1)
 plt.show()
