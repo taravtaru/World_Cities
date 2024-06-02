@@ -62,7 +62,91 @@ void demo_city_cluster(int n_cluster) {
     }
     fclose(city_db);
     printf("\n");
+    vector<double> cx(n_cluster, 0);
+    vector<double> cy(n_cluster, 0);
+    for (int i = 0; i < n_cluster; ++i) {
+        while (true) {
+            int j = rand() % data.size();
+            double x_0 = data[j]->x;
+            double y_0 = data[j]->y;
+            auto k = std::find(cx.begin(), cx.end(), x_0);
+            if (k != cx.end()) {
+                continue;
+            }
+            cx[i] = x_0;
+            cy[i] = y_0;
+            break;
+        }
+    }
+    vector<double> ncx(n_cluster, 0);
+    vector<double> ncy(n_cluster, 0);
+    vector<int> total_per_cluster(n_cluster, 0);
+    int n_step = 0;
+    while (true) {
+        printf("%d\n", ++n_step);
+        /// Для каждой точки считаем расстояние до центров и выбираем ближайший
+        for (int i = 0; i < n; ++i) {
+            int best_idx = 0;
+            double min_dist_sq =
+                    (data[i]->x - cx[0]) * (data[i]->x - cx[0]) + (data[i]->y - cy[0]) * (data[i]->y - cy[0]);
+            for (int j = 1; j < n_cluster; ++j) {
+                double new_dist_sq =
+                        (data[i]->x - cx[j]) * (data[i]->x - cx[j]) + (data[i]->y - cy[j]) * (data[i]->y - cy[j]);
+                if (new_dist_sq < min_dist_sq) {
+                    best_idx = j;
+                    min_dist_sq = new_dist_sq;
+                }
+            }
+            cluster_idx[i] = best_idx;
+        }
+        for (int j = 0; j < n_cluster; ++j) {
+            ncx[j] = 0;
+            ncy[j] = 0;
+            total_per_cluster[j] = 0;
+        }
+        for (int i = 0; i < n; ++i) {
+            total_per_cluster[cluster_idx[i]]++;
+            ncx[cluster_idx[i]] += data[i]->x;
+            ncy[cluster_idx[i]] += data[i]->y;
+        }
+        for (int j = 0; j < n_cluster; ++j) {
+            printf("cluster#%d -> %d\n", j, total_per_cluster[j]);
+            ncx[j] /= total_per_cluster[j];
+            ncy[j] /= total_per_cluster[j];
+        }
+        /// Проверка на схождение(новые центры достаточно близки к старым центрам)
+        bool converged_yes = true;
+        double sum_dist_sq = 0;
+        for (int i = 0; i < n_cluster; ++i) {
+            double dist_sq = (ncx[i] - cx[i]) * (ncx[i] - cx[i]) + (ncy[i] - cy[i]) * (ncy[i] - cy[i]);
+            sum_dist_sq += dist_sq;
+            if (dist_sq > 1e-10) {
+                converged_yes = false;
 
+            }
+
+        }
+        if (converged_yes || n_step == 100) {
+            break;
+        } else {
+            for (int i = 0; i < n_cluster; ++i) {
+                cx[i] = ncx[i];
+                cy[i] = ncy[i];
+            }
+        }
+    }
+    FILE *pf2 = fopen("city_clusters.txt", "w");
+    for (int i = 0; i < n_cluster; ++i) {
+        fprintf(pf2, "%d\n", total_per_cluster[i]);
+        for (int j = 0; j < n; ++j) {
+            if (cluster_idx[j] == i) {
+                fprintf(pf2, "%lf\t%lf\n", data[j]->x, data[j]->y);
+            }
+        }
+        printf("\n");
+    }
+    fclose(pf2);
+}
 
 void demo1() {
     demo_city_cluster(10);
