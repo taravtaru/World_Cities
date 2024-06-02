@@ -1,7 +1,7 @@
 # World Cities Clusters Explorer
 ![image](https://github.com/taravtaru/World_Cities/assets/145187712/5bd5b9ee-239b-4105-b8ea-fbbf4cb7a619)
 # Implementation
-1) Develop a K-means clustering alghorithm
+1) Develop a K-means clustering algorithm
 2) Develop a Silhoette Interpretation algorithm
 3) Count a Silhoette score for each observation
 4) Set for input a preprocessed matrix and number of clusters
