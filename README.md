@@ -7,6 +7,11 @@
 4) Set for input a preprocessed matrix and number of clusters
 5) Set for output marked clusters for input data
 6) Set a visualization of our clusters and silhoette score (additional)
+# Requirements
+1) C++ compiler
+2) Python compiler for matplotlib visualization (optional)
+# References
+1) SimpleMaps basic World Cities Database: https://simplemaps.com/data/world-cities
 # Clusters Example
 ![image](https://github.com/taravtaru/World_Cities/assets/145187712/b3b0a527-b53f-466c-83a2-30162d34ccc3)
 # Silhoette Score Example
