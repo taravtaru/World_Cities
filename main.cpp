@@ -24,13 +24,87 @@ struct city {
     }
 };
 
+struct city_sc {
+    string name;
+    double coef;
+
+    city_sc(string n, double c) :
+            name(n), coef(c) {}
+};
+
+struct city_sc_sorter_desc {
+    bool operator()(const city_sc &a, const city_sc &b) const {
+        return a.coef > b.coef;
+    }
+};
+
+vector<vector<city_sc>>
+silhouette(const vector<city *> &data, const vector<double> &cx, const vector<double> &cy, const vector<int> &c_idx,
+           const vector<int> &total_per_cluster, const int n_cluster) {
+    vector<vector<city_sc>> res;
+    // для каждой точки найдем ближайший соседний кластер
+    vector<int> nearest_other(data.size(), -1);
+    for (int j = 0; j < data.size(); ++j) {
+        int best_other_idx = -1;
+        double min_other_dist = 1e12;
+        for (int i = 0; i < n_cluster; ++i) {
+            if (i == c_idx[j]) {
+                continue;
+            }
+            double other_dist = sqrt(pow(data[j]->x - cx[i], 2) + pow(data[j]->y - cy[i], 2));
+            if (best_other_idx == -1 || other_dist < min_other_dist) {
+                best_other_idx = i;
+                min_other_dist = other_dist;
+            }
+        }
+        nearest_other[j] = best_other_idx;
+    }
+    vector<vector<int>> clusters;
+    for (int i = 0; i < n_cluster; ++i) {
+        clusters.push_back({});
+        res.push_back({});
+    }
+    for (int j = 0; j < data.size(); ++j) {
+        clusters[c_idx[j]].push_back(j);
+    }
+    for (int k = 0; k < n_cluster; ++k) {
+        if (clusters[k].size() < 2) {
+            continue;
+        }
+        for (int i = 0; i < clusters[k].size(); ++i) {
+            // для i-той точки копим а и b
+            double sa = 0;
+            for (int j = 0; j < clusters[k].size(); ++j) {
+                if (j == i) {
+                    continue;
+                }
+                sa += sqrt(pow(data[clusters[k][i]]->x - data[clusters[k][j]]->x, 2) +
+                           pow(data[clusters[k][i]]->y - data[clusters[k][j]]->y, 2));
+            }
+            sa /= clusters[k].size() - 1;
+            double sb = 0;
+            int k2 = nearest_other[clusters[k][i]];
+            for (int j = 0; j < clusters[k2].size(); ++j) {
+                sb += sqrt(pow(data[clusters[k][i]]->x - data[clusters[k2][j]]->x, 2) +
+                           pow(data[clusters[k][i]]->y - data[clusters[k2][j]]->y, 2));
+            }
+            sb /= clusters[k2].size();
+            double coef = (sb - sa) / std::max(sa, sb);
+            string name = data[clusters[k][i]]->name;
+            res[k].push_back(city_sc(name, coef));
+        }
+        //закончили очередной кластер, сортируем
+        std::sort(res[k].begin(), res[k].end(), city_sc_sorter_desc());
+    }
+    return res;
+}
 
 void demo_city_cluster(int n_cluster) {
     srand(time(nullptr));
     const int n = 47868;
     vector<city *> data;
     vector<int> cluster_idx(n, -1);
-    FILE *city_db = fopen("worldcities.csv", "r");
+    FILE *city_db = fopen("../worldcities.csv", "r");
     if (city_db == nullptr) {
         cout << "file not found" << std::endl;
         return;
@@ -50,6 +124,7 @@ void demo_city_cluster(int n_cluster) {
                 k++;
             }
         }
+        /// Зануляем байт который идёт после названия города
         buf[buf_com[1] - 1] = 0;
         string name = buf + buf_com[0] + 2;
         double lat = strtod(buf + buf_com[1] + 2, nullptr);
@@ -146,6 +221,15 @@ void demo_city_cluster(int n_cluster) {
         printf("\n");
     }
     fclose(pf2);
+    auto res = silhouette(data, cx, cy, cluster_idx, total_per_cluster, n_cluster);
+    FILE *pf3 = fopen("silhouette.txt", "w");
+    for (int k = 0; k < res.size(); ++k) {
+        fprintf(pf3, "%ld\n", res[k].size());
+        for (int i = 0; i < res[k].size(); ++i) {
+            fprintf(pf3, "%s\t%lf\n", res[k][i].name.c_str(), res[k][i].coef);
+        }
+    }
+    fclose(pf3);
 }
 
 void demo1() {
